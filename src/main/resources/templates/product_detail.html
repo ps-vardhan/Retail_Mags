@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="container py-5">
+      <div class="row">
+        <!-- Media Column -->
+        <div class="col-md-6">
+          <img
+            th:src="${product.mainImageUrl}"
+            class="img-fluid rounded"
+            alt="Large Image" />
+        </div>
+
+        <!-- Info Column -->
+        <div class="col-md-6">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/products">Store</a></li>
+              <li class="breadcrumb-item active" th:text="${product.name}"></li>
+            </ol>
+          </nav>
+
+          <h1 th:text="${product.name}"></h1>
+          <p class="h3 text-primary" th:text="'₹' + ${product.price}"></p>
+
+          <!-- Local Inventory Status -->
+          <div class="stock-status mt-3">
+            <span th:if="${inventory.quantity > 0}" class="text-success">
+              <i class="fas fa-check-circle"></i> In Stock (<span
+                th:text="${inventory.quantity}"></span>
+              units)
+            </span>
+            <span th:if="${inventory.quantity == 0}" class="text-danger">
+              <i class="fas fa-times-circle"></i> Currently Out of Stock
+            </span>
+          </div>
+
+          <div class="mt-4">
+            <h5>Product Specifications (Siphoned)</h5>
+            <div class="specs-table" th:utext="${product.specifications}">
+              <!-- Renders raw HTML specs from Flipkart -->
+            </div>
+          </div>
+
+          <button
+            class="btn btn-lg btn-warning mt-4 w-100"
+            th:disabled="${inventory.quantity == 0}">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
