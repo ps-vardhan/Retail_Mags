@@ -13,6 +13,7 @@ import com.retail.retailmanager.model.Product;
 import com.retail.retailmanager.repository.InventoryRepository;
 import com.retail.retailmanager.repository.OrderRepository;
 import com.retail.retailmanager.repository.ProductRepository;
+import com.retail.retailmanager.service.EmbeddingService;
 import com.retail.retailmanager.service.ProductSyncService;
 
 @Controller
@@ -23,15 +24,18 @@ public class AdminController {
     private final OrderRepository orderRepository;
     private final InventoryRepository inventoryRepository;
     private final ProductSyncService productSyncService;
+    private final EmbeddingService embeddingService;
 
     public AdminController(ProductRepository productRepository,
             OrderRepository orderRepository,
             InventoryRepository inventoryRepository,
-            ProductSyncService productSyncService) {
+            ProductSyncService productSyncService,
+            EmbeddingService embeddingService) {
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
         this.inventoryRepository = inventoryRepository;
         this.productSyncService = productSyncService;
+        this.embeddingService = embeddingService;
     }
 
     @GetMapping("/dashboard")
@@ -43,9 +47,7 @@ public class AdminController {
 
     /**
      * Triggers a full product sync from DummyJSON.
-     * Replaces the dead saveSettings() method that was silently discarding
-     * FlipkartConfig.
-     * Redirects back to dashboard with a query param so Thymeleaf can show a
+     * Redirects back to dashboard with ?synced=true so Thymeleaf shows the
      * success banner.
      */
     @PostMapping("/sync")
@@ -54,18 +56,30 @@ public class AdminController {
         return "redirect:/admin/dashboard?synced=true";
     }
 
+    /**
+     * Manually adds a single product.
+     * After the DB save, generateAndStore() is called so this product
+     * is immediately available in semantic search — the original code
+     * skipped this, meaning manually added products never appeared in
+     * VectorStore.similaritySearch() results.
+     */
     @PostMapping("/products/add")
     public String addProduct(@RequestParam String name,
             @RequestParam String description,
             @RequestParam java.math.BigDecimal price,
             @RequestParam String category,
             @RequestParam int quantity) {
+
         Product product = new Product();
         product.setName(name);
         product.setDescription(description);
         product.setPrice(price);
         product.setCategory(category);
         productRepository.save(product);
+
+        // Generate embedding and write to both product.embedding column
+        // and the Spring AI vector_store table so semantic search works.
+        embeddingService.generateAndStore(product);
 
         Inventory inventory = new Inventory();
         inventory.setProduct(product);
